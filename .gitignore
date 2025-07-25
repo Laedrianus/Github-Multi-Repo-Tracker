@@ -1,0 +1,8 @@
+node_modules/ 
+build/ 
+.DS_Store 
+.env
+*.log 
+~$* 
+src/App_dosyalar/*.xml 
+src/App_dosyalar/*.thmx 
