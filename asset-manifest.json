@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/GitHub-Repo-Contributor-Tracker/static/css/main.e6c13ad2.css",
+    "main.js": "/GitHub-Repo-Contributor-Tracker/static/js/main.d85b4929.js",
+    "static/js/453.55194ac0.chunk.js": "/GitHub-Repo-Contributor-Tracker/static/js/453.55194ac0.chunk.js",
+    "index.html": "/GitHub-Repo-Contributor-Tracker/index.html",
+    "main.e6c13ad2.css.map": "/GitHub-Repo-Contributor-Tracker/static/css/main.e6c13ad2.css.map",
+    "main.d85b4929.js.map": "/GitHub-Repo-Contributor-Tracker/static/js/main.d85b4929.js.map",
+    "453.55194ac0.chunk.js.map": "/GitHub-Repo-Contributor-Tracker/static/js/453.55194ac0.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.e6c13ad2.css",
+    "static/js/main.d85b4929.js"
+  ]
+}
