@@ -250,7 +250,7 @@ function RecentCommitsModal({ onClose, darkMode, recentCommits, onRepoSelect, on
                         marginBottom: '5px'
                       }}
                     >
-                      {commit.commit.message.split('\n')[0]}
+                      {commit.commit.message.split('\n')[0]} {/* DÜZELTİLDİ */}
                     </a>
                     <button
                       onClick={() => onSpellCheck(commit.commit.message)} // Spell check çağrısı
@@ -693,7 +693,7 @@ function OwnerRepoModal({ owner, onClose, darkMode, onSelectRepos }) {
         : [...prev, fullName]
     );
   const copySelected = () =>
-    navigator.clipboard.writeText(selectedRepos.join("\n"));
+    navigator.clipboard.writeText(selectedRepos.join('\n')); // DÜZELTİLDİ
   const addAll = () => {
     onSelectRepos(repos.map((r) => r.full_name));
     onClose();
@@ -888,6 +888,163 @@ function OwnerRepoModal({ owner, onClose, darkMode, onSelectRepos }) {
     </div>
   );
 }
+
+// --- YENI: Rate Limit Component ---
+function RateLimitInfo({ darkMode, theme }) {
+  const [rateLimit, setRateLimit] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const fetchRateLimit = useCallback(async () => {
+    if (!GITHUB_TOKEN) {
+      setRateLimit(null);
+      return;
+    }
+    
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('https://api.github.com/rate_limit', {
+        headers: getAuthHeaders()
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch rate limit: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setRateLimit(data.resources.core);
+    } catch (err) {
+      console.error("Error fetching rate limit:", err);
+      setError("Failed to fetch rate limit information");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchRateLimit();
+    // Her 30 saniyede bir rate limit bilgisini güncelle
+    const interval = setInterval(fetchRateLimit, 30000);
+    return () => clearInterval(interval);
+  }, [fetchRateLimit]);
+
+  if (!GITHUB_TOKEN) {
+    return (
+      <div style={{ 
+        background: darkMode ? "rgba(255, 152, 0, 0.1)" : "rgba(255, 152, 0, 0.2)", 
+        padding: '10px 15px', 
+        borderRadius: '8px', 
+        border: `1px solid ${darkMode ? "#ff9800" : "#f57c00"}`,
+        marginBottom: '20px',
+        fontSize: '14px'
+      }}>
+        <span style={{ color: darkMode ? "#ffcc80" : "#e65100" }}>
+          ⚠️ No GitHub token provided. Using anonymous access (60 requests/hour). 
+          Set <code>REACT_APP_GITHUB_TOKEN</code> in your environment variables to increase limit to 5000/hour.
+        </span>
+      </div>
+    );
+  }
+
+  if (loading && !rateLimit) {
+    return (
+      <div style={{ 
+        background: theme.cardBg, 
+        padding: '10px 15px', 
+        borderRadius: '8px', 
+        border: `1px solid ${theme.borderColor}`,
+        marginBottom: '20px',
+        fontSize: '14px'
+      }}>
+        <span>Loading rate limit info...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ 
+        background: darkMode ? "rgba(244, 67, 54, 0.1)" : "rgba(244, 67, 54, 0.2)", 
+        padding: '10px 15px', 
+        borderRadius: '8px', 
+        border: `1px solid ${darkMode ? "#f44336" : "#d32f2f"}`,
+        marginBottom: '20px',
+        fontSize: '14px'
+      }}>
+        <span style={{ color: darkMode ? "#ffcdd2" : "#b71c1c" }}>
+          ⚠️ {error}
+        </span>
+      </div>
+    );
+  }
+
+  if (!rateLimit) return null;
+
+  const percentage = (rateLimit.remaining / rateLimit.limit) * 100;
+  const isLow = percentage < 20;
+  const isCritical = percentage < 5;
+
+  return (
+    <div style={{ 
+      background: theme.cardBg, 
+      padding: '15px', 
+      borderRadius: '8px', 
+      border: `1px solid ${theme.borderColor}`,
+      marginBottom: '20px'
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+        <h4 style={{ margin: 0, color: darkMode ? "#ddd" : "#444", fontSize: '16px' }}>
+          GitHub API Rate Limit
+        </h4>
+        <button 
+          onClick={fetchRateLimit}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: darkMode ? "#64b5f6" : "#1976d2",
+            cursor: 'pointer',
+            fontSize: '14px',
+            padding: '2px 6px',
+            borderRadius: '4px'
+          }}
+          onMouseOver={(e) => e.target.style.background = darkMode ? "rgba(100, 181, 246, 0.1)" : "rgba(25, 118, 210, 0.1)"}
+          onMouseOut={(e) => e.target.style.background = 'transparent'}
+        >
+          🔄 Refresh
+        </button>
+      </div>
+      <div style={{ marginBottom: '8px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '4px' }}>
+          <span>Requests:</span>
+          <span>
+            <strong>{rateLimit.remaining}</strong> / {rateLimit.limit}
+          </span>
+        </div>
+        <div style={{ 
+          height: '8px', 
+          backgroundColor: darkMode ? "#444" : "#e0e0e0", 
+          borderRadius: '4px', 
+          overflow: 'hidden' 
+        }}>
+          <div 
+            style={{ 
+              height: '100%', 
+              width: `${percentage}%`,
+              backgroundColor: isCritical ? '#f44336' : isLow ? '#ff9800' : (darkMode ? '#64b5f6' : '#1976d2'),
+              transition: 'width 0.3s ease'
+            }} 
+          />
+        </div>
+      </div>
+      <div style={{ fontSize: '12px', color: darkMode ? "#aaa" : "#666" }}>
+        Resets at: {new Date(rateLimit.reset * 1000).toLocaleTimeString()}
+      </div>
+    </div>
+  );
+}
+// --- YENI BITTI: Rate Limit Component ---
+
 function App() {
   const [repos, setRepos] = useState([]);
   const [newRepo, setNewRepo] = useState("");
@@ -1601,6 +1758,11 @@ function App() {
         />
       )}
       {/* --- YENI BITTI: RecentCommitsModal Render --- */}
+      
+      {/* --- YENI: Rate Limit Info Render --- */}
+      <RateLimitInfo darkMode={darkMode} theme={theme} />
+      {/* --- YENI BITTI: Rate Limit Info Render --- */}
+      
       <section
         style={{
           marginBottom: 30,
