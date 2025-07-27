@@ -46,22 +46,22 @@ const CATEGORY_RULES = {
   docs: [".md", ".txt", ".rst"],
   config: [".json", ".yml", ".yaml", ".toml", ".ini", ".env"],
 };
-// --- YENI: Tarih Aralığı Değişiklik Özeti Bileşeni ---
-// Seçilen tarih aralığındaki commit'leri özetleyen yeni bileşen
-// Artık contributor seçimine bağlı değil
+// --- NEW: Date Range Changes Summary Component ---
+// New component that summarizes commits for the selected date range
+// No longer dependent on contributor selection
 function DateRangeSummary({ commits, darkMode, theme }) {
   const [summary, setSummary] = useState({});
   useEffect(() => {
     const processCommits = () => {
       const summaryData = {};
       commits.forEach(commit => {
-        // GitHub API'sinden gelen commit objesi, detaylı bilgi için /repos/{owner}/{repo}/commits/{ref} endpoint'inden
-        // gelmiş olabilir (files bilgisi için). Ancak, doğrudan /repos/{owner}/{repo}/commits'ten gelen commit'lerin
-        // files bilgisi olmayabilir. Bu nedenle files varsa işle, yoksa geç.
+        // Commit object from GitHub API, detailed info might come from /repos/{owner}/{repo}/commits/{ref} endpoint (for files info).
+        // However, commits directly from /repos/{owner}/{repo}/commits might not have files info.
+        // So process files if available, otherwise skip.
         if (!commit.files) return; 
         commit.files.forEach(file => {
           const pathParts = file.filename.split('/');
-          // En üst seviye dizin veya dosya adı
+          // Top-level directory or file name
           const topLevel = pathParts[0] || 'root';
           if (!summaryData[topLevel]) {
             summaryData[topLevel] = {
@@ -70,11 +70,11 @@ function DateRangeSummary({ commits, darkMode, theme }) {
               newFiles: 0,
               modifiedFiles: 0,
               deletedFiles: 0,
-              // Commit'leri takip etmek için Set kullanabiliriz, ama burada basitçe sayaç yeterli
+              // We can use a Set to track commits, but a simple counter is sufficient here
               commits: new Set() 
             };
           }
-          summaryData[topLevel].commits.add(commit.sha); // Aynı commit'i birden saymamak için
+          summaryData[topLevel].commits.add(commit.sha); // Prevent counting the same commit multiple times
           if (file.status === 'added') {
             summaryData[topLevel].newFiles += 1;
           } else if (file.status === 'modified') {
@@ -84,10 +84,10 @@ function DateRangeSummary({ commits, darkMode, theme }) {
           }
         });
       });
-      // Set'i sayıya çevir
+      // Convert Set to count
       Object.values(summaryData).forEach(item => {
         item.commitCount = item.commits.size;
-        delete item.commits; // Artık ihtiyacımız yok
+        delete item.commits; // No longer needed
       });
       setSummary(summaryData);
     };
@@ -140,7 +140,7 @@ function DateRangeSummary({ commits, darkMode, theme }) {
               <span style={{ 
                 marginRight: '8px', 
                 fontSize: '16px',
-                // Basit bir ikon ataması
+                // Simple icon assignment
                 color: iconColor
               }}>
                 {item.name.endsWith('.sol') ? '🛠️' : 
@@ -162,9 +162,9 @@ function DateRangeSummary({ commits, darkMode, theme }) {
     </div>
   );
 }
-// --- YENI BITTI: Tarih Aralığı Değişiklik Özeti Bileşeni ---
-// --- YENI: Son Commitler Modal Bileşeni ---
-// RecentCommitsModal'a spell check işlevi eklendi
+// --- NEW END: Date Range Changes Summary Component ---
+// --- NEW: Recent Commits Modal Component ---
+// RecentCommitsModal with spell check functionality added
 function RecentCommitsModal({ onClose, darkMode, recentCommits, onRepoSelect, onSpellCheck }) {
   const themeBg = darkMode ? "rgba(30, 30, 40, 0.95)" : "rgba(255, 255, 255, 0.95)";
   const themeColor = darkMode ? "#eee" : "#222";
@@ -182,7 +182,7 @@ function RecentCommitsModal({ onClose, darkMode, recentCommits, onRepoSelect, on
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        zIndex: 100000 // InfoModal'den daha yüksek
+        zIndex: 100000 // Higher than InfoModal
       }}
       onClick={onClose}
     >
@@ -250,10 +250,10 @@ function RecentCommitsModal({ onClose, darkMode, recentCommits, onRepoSelect, on
                         marginBottom: '5px'
                       }}
                     >
-                      {commit.commit.message.split('\n')[0]} {/* DÜZELTİLDİ */}
+                      {commit.commit.message.split('\n')[0]} {/* FIXED: split('\n') */}
                     </a>
                     <button
-                      onClick={() => onSpellCheck(commit.commit.message)} // Spell check çağrısı
+                      onClick={() => onSpellCheck(commit.commit.message)} // Spell check call
                       style={{
                         padding: '4px 8px',
                         fontSize: '10px',
@@ -285,7 +285,7 @@ function RecentCommitsModal({ onClose, darkMode, recentCommits, onRepoSelect, on
                   <span>
                     <strong>{commit.commit.author.name}</strong>
                   </span>
-                  <span>{new Date(commit.commit.author.date).toLocaleString()}</span>
+                  <span>{new Date(commit.commit.author.date).toLocaleString('en-US')}</span> {/* FIXED: 'en-US' added */}
                 </div>
               </li>
             ))}
@@ -295,9 +295,9 @@ function RecentCommitsModal({ onClose, darkMode, recentCommits, onRepoSelect, on
     </div>
   );
 }
-// --- YENI BITTI: Son Commitler Modal Bileşeni ---
-// --- YENI: Yazım Denetimi Modal Bileşeni ---
-// SpellCheckModal'in z-index'i artırıldı
+// --- NEW END: Recent Commits Modal Component ---
+// --- NEW: Spell Check Modal Component ---
+// SpellCheckModal's z-index increased
 function SpellCheckModal({ message, onClose, darkMode, spellCheckResult, isChecking }) {
   const themeBg = darkMode ? "rgba(30, 30, 40, 0.95)" : "rgba(255, 255, 255, 0.95)";
   const themeColor = darkMode ? "#eee" : "#222";
@@ -313,7 +313,7 @@ function SpellCheckModal({ message, onClose, darkMode, spellCheckResult, isCheck
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        // Z-index düzeltildi: RecentCommitsModal'den (100000) daha yüksek
+        // Z-index fixed: Higher than RecentCommitsModal (100000)
         zIndex: 100001 
       }}
       onClick={onClose}
@@ -395,7 +395,7 @@ function SpellCheckModal({ message, onClose, darkMode, spellCheckResult, isCheck
     </div>
   );
 }
-// --- YENI BITTI: Yazım Denetimi Modal Bileşeni ---
+// --- NEW END: Spell Check Modal Component ---
 function getCommitType(message) {
   if (!message) return "other";
   const lower = message.toLowerCase();
@@ -431,8 +431,8 @@ function categorizeFile(path) {
   }
   return 'other';
 }
-// --- DEGISTIRILDI: CommitDetails Bileşeni ---
-// CommitDetails bileşenine yazım denetimi düğmesi ve işlevselliği eklendi
+// --- CHANGED: CommitDetails Component ---
+// CommitDetails component with spell check button and functionality added
 function CommitDetails({ username, commits, darkMode, onSpellCheck }) {
   if (!commits || commits.length === 0)
     return <p>No commits to show for {username}.</p>;
@@ -463,7 +463,7 @@ function CommitDetails({ username, commits, darkMode, onSpellCheck }) {
         Commit Details for {username}
       </h4>
       <ul style={{ listStyle: "none", paddingLeft: 0, margin: 0 }}>
-        {/* Commit satırları için yeni bileşen kullanıldı */}
+        {/* New component used for commit rows */}
         {commits.map((c) => (
           <CommitDetailItem
             key={c.sha}
@@ -477,9 +477,9 @@ function CommitDetails({ username, commits, darkMode, onSpellCheck }) {
     </div>
   );
 }
-// --- DEGISTIRILDI BITTI: CommitDetails Bileşeni ---
-// --- YENI: CommitDetailItem Bileşeni ---
-// Her commit satırını ve yazım denetimi düğmesini gösteren yeni bileşen
+// --- CHANGED END: CommitDetails Component ---
+// --- NEW: CommitDetailItem Component ---
+// New component that shows each commit row and the spell check button
 function CommitDetailItem({ commit, darkMode, borderColor, onSpellCheck }) {
   const handleSpellCheckClick = () => {
     onSpellCheck(commit.commit.message);
@@ -499,7 +499,7 @@ function CommitDetailItem({ commit, darkMode, borderColor, onSpellCheck }) {
           fontSize: 12
         }}
       >
-        {new Date(commit.commit.author.date).toLocaleDateString()}
+        {new Date(commit.commit.author.date).toLocaleDateString('en-US')} {/* FIXED: 'en-US' added */}
       </strong>
       <div style={{ position: 'relative' }}>
         <a
@@ -511,7 +511,7 @@ function CommitDetailItem({ commit, darkMode, borderColor, onSpellCheck }) {
             color: darkMode ? "#64b5f6" : "#1976d2",
             display: "block",
             lineHeight: 1.4,
-            marginBottom: '5px' // Düğme ile mesaj arasına boşluk
+            marginBottom: '5px' // Space between button and message
           }}
         >
           {commit.commit.message}
@@ -534,7 +534,7 @@ function CommitDetailItem({ commit, darkMode, borderColor, onSpellCheck }) {
     </li>
   );
 }
-// --- YENI BITTI: CommitDetailItem Bileşeni ---
+// --- NEW END: CommitDetailItem Component ---
 function InfoModal({ onClose, darkMode }) {
   const themeBg = darkMode ? "rgba(30, 30, 40, 0.95)" : "rgba(255, 255, 255, 0.95)";
   const themeColor = darkMode ? "#eee" : "#222";
@@ -693,7 +693,7 @@ function OwnerRepoModal({ owner, onClose, darkMode, onSelectRepos }) {
         : [...prev, fullName]
     );
   const copySelected = () =>
-    navigator.clipboard.writeText(selectedRepos.join('\n')); // DÜZELTİLDİ
+    navigator.clipboard.writeText(selectedRepos.join('\n')); // FIXED: '\n' corrected
   const addAll = () => {
     onSelectRepos(repos.map((r) => r.full_name));
     onClose();
@@ -889,7 +889,7 @@ function OwnerRepoModal({ owner, onClose, darkMode, onSelectRepos }) {
   );
 }
 
-// --- YENI: Rate Limit Component ---
+// --- NEW: Rate Limit Component ---
 function RateLimitInfo({ darkMode, theme }) {
   const [rateLimit, setRateLimit] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -924,7 +924,7 @@ function RateLimitInfo({ darkMode, theme }) {
 
   useEffect(() => {
     fetchRateLimit();
-    // Her 30 saniyede bir rate limit bilgisini güncelle
+    // Update rate limit info every 30 seconds
     const interval = setInterval(fetchRateLimit, 30000);
     return () => clearInterval(interval);
   }, [fetchRateLimit]);
@@ -1038,12 +1038,12 @@ function RateLimitInfo({ darkMode, theme }) {
         </div>
       </div>
       <div style={{ fontSize: '12px', color: darkMode ? "#aaa" : "#666" }}>
-        Resets at: {new Date(rateLimit.reset * 1000).toLocaleTimeString()}
+        Resets at: {new Date(rateLimit.reset * 1000).toLocaleTimeString('en-US')} {/* FIXED: 'en-US' added */}
       </div>
     </div>
   );
 }
-// --- YENI BITTI: Rate Limit Component ---
+// --- NEW END: Rate Limit Component ---
 
 function App() {
   const [repos, setRepos] = useState([]);
@@ -1071,21 +1071,21 @@ function App() {
   const [ownerForModal, setOwnerForModal] = useState(null);
   const [repoFileTreeMap, setRepoFileTreeMap] = useState({});
   const [repoFileMap, setRepoFileMap] = useState({});
-  // --- YENI: Yazım Denetimi State'leri ---
+  // --- NEW: Spell Check States ---
   const [showSpellCheckModal, setShowSpellCheckModal] = useState(false);
   const [currentSpellCheckMessage, setCurrentSpellCheckMessage] = useState("");
   const [spellCheckResult, setSpellCheckResult] = useState(null);
   const [isSpellCheckLoading, setIsSpellCheckLoading] = useState(false);
-  // --- YENI BITTI: Yazım Denetimi State'leri --
-  // --- YENI: Son Commitler State'leri ---
+  // --- NEW END: Spell Check States --
+  // --- NEW: Recent Commits States ---
   const [showRecentCommitsModal, setShowRecentCommitsModal] = useState(false);
   const [recentCommits, setRecentCommits] = useState([]);
   const [recentCommitsLoading, setRecentCommitsLoading] = useState(false);
-  // --- YENI BITTI: Son Commitler State'leri ---
-  // --- YENI: Tüm Filtrelenmiş Commit'ler için State ---
+  // --- NEW END: Recent Commits States ---
+  // --- NEW: All Filtered Commits State ---
   const [allFilteredCommits, setAllFilteredCommits] = useState([]);
   const [isFetchingAllCommits, setIsFetchingAllCommits] = useState(false);
-  // --- YENI BITTI: Tüm Filtrelenmiş Commit'ler için State ---
+  // --- NEW END: All Filtered Commits State ---
   const lightTheme = {
     backgroundColor: "#f8f9fa",
     color: "#333",
@@ -1115,8 +1115,8 @@ function App() {
     document.body.style.backgroundColor = darkMode ? "#121212" : "#f8f9fa";
     document.body.style.color = darkMode ? "#eee" : "#333";
   }, [darkMode]);
-  // --- YENI: Yazım Denetimi Fonksiyonu ---
-  // Language parametresi 'en-US' olarak sabitlendi
+  // --- NEW: Spell Check Function ---
+  // Language parameter fixed to 'en-US'
   const performSpellCheck = useCallback(async (message) => {
     if (!message) return;
     setCurrentSpellCheckMessage(message);
@@ -1124,7 +1124,7 @@ function App() {
     setIsSpellCheckLoading(true);
     setSpellCheckResult(null);
     try {
-      // LanguageTool API'ye POST isteği
+      // POST request to LanguageTool API
       const response = await fetch('https://api.languagetool.org/v2/check', {
         method: 'POST',
         headers: {
@@ -1132,7 +1132,7 @@ function App() {
         },
         body: new URLSearchParams({
           text: message,
-          language: 'en-US' // Sadece İngilizce
+          language: 'en-US' // English only
         })
       });
       if (!response.ok) {
@@ -1147,14 +1147,14 @@ function App() {
       setIsSpellCheckLoading(false);
     }
   }, []);
-  // --- YENI BITTI: Yazım Denetimi Fonksiyonu ---
-  // --- YENI: Son Commitleri Getirme Fonksiyonu ---
+  // --- NEW END: Spell Check Function ---
+  // --- NEW: Fetch Recent Commits Function ---
   const fetchRecentCommits = async () => {
     if (repos.length === 0) return;
     setRecentCommitsLoading(true);
     setError(null);
     try {
-      // Tüm repository'ler için son commit'leri paralel olarak çek
+      // Fetch recent commits for all repositories in parallel
       const promises = repos.map(repo =>
         fetch(`https://api.github.com/repos/${repo}/commits?per_page=5`, { 
           headers: getAuthHeaders() 
@@ -1169,12 +1169,12 @@ function App() {
         )
       );
       const results = await Promise.all(promises);
-      // Tüm commit'leri tek bir diziye koy ve tarihe göre sırala
+      // Put all commits into a single array and sort by date
       const allCommits = results.flat();
       allCommits.sort((a, b) => 
         new Date(b.commit.author.date) - new Date(a.commit.author.date)
       );
-      // İlk 25 commit'i al
+      // Take the first 25 commits
       setRecentCommits(allCommits.slice(0, 25));
       setShowRecentCommitsModal(true);
     } catch (err) {
@@ -1184,7 +1184,7 @@ function App() {
       setRecentCommitsLoading(false);
     }
   };
-  // --- YENI BITTI: Son Commitleri Getirme Fonksiyonu ---
+  // --- NEW END: Fetch Recent Commits Function ---
   const clearRepoData = (repo) => {
     setContributors([]);
     setSelectedUsers([]);
@@ -1194,7 +1194,7 @@ function App() {
     setRepoFileMap({});
     setRepoFileTreeMap({});
     setRepoErrors({});
-    setAllFilteredCommits([]); // Repo değiştiğinde bu listeyi de temizle
+    setAllFilteredCommits([]); // Clear this list when repo changes
   };
   const addRepo = (repoFullName) => {
     if (!repoFullName || repos.includes(repoFullName)) {
@@ -1230,7 +1230,7 @@ function App() {
       setUserCategoryDetails({});
       setRepoFileMap({});
       setRepoFileTreeMap({});
-      setAllFilteredCommits([]); // Repo silindiğinde bu listeyi de temizle
+      setAllFilteredCommits([]); // Clear this list when repo is removed
     }
   };
   const fetchRepoFileTree = async (repoName) => {
@@ -1460,21 +1460,21 @@ function App() {
     setFavorites(updated);
     localStorage.setItem("favorites", JSON.stringify(updated));
   };
-  // --- DEGISTIRILDI: filterCommits fonksiyonu ---
-  // useCallback ile sarmalandı ve dependency'ler eklendi
+  // --- CHANGED: filterCommits function ---
+  // Wrapped with useCallback and dependencies added
   const filterCommits = useCallback((commits) =>
     commits.filter((c) => {
-      // c.commit.message veya c.message olabilir, API çağrısına bağlı
+      // c.commit.message or c.message, depending on API call
       const message = c.commit?.message || c.message || ""; 
       if (commitFilter !== "all" && getCommitType(message) !== commitFilter)
         return false;
-      // c.commit.author.date veya c.author?.date olabilir
+      // c.commit.author.date or c.author?.date
       const date = c.commit?.author?.date || c.author?.date || "";
       if (!isInDateRange(date, dateFrom, dateTo)) return false;
       return true;
-    }), [commitFilter, dateFrom, dateTo] // Dependency'ler eklendi
+    }), [commitFilter, dateFrom, dateTo] // Dependencies added
   );
-  // --- DEGISTIRILDI BITTI: filterCommits fonksiyonu ---
+  // --- CHANGED END: filterCommits function ---
   const getWeeklyCommitData = () => {
     const allWeeks = new Set();
     const userWeeklyMap = {};
@@ -1624,8 +1624,8 @@ function App() {
       </div>
     </header>
   );
-  // --- DEGISTIRILDI: CommitDetails Render Fonksiyonu ---
-  // CommitDetails bileşenine onSpellCheck prop'u eklendi
+  // --- CHANGED: CommitDetails Render Function ---
+  // CommitDetails component with onSpellCheck prop added
   const renderCommitDetails = () => (
     selectedUsers.map(user => (
       <CommitDetails
@@ -1633,50 +1633,50 @@ function App() {
         username={user}
         commits={filterCommits(userCommitsMap[user] || [])}
         darkMode={darkMode}
-        onSpellCheck={performSpellCheck} // Yeni prop
+        onSpellCheck={performSpellCheck} // New prop
       />
     ))
   );
-  // --- DEGISTIRILDI BITTI: CommitDetails Render Fonksiyonu ---
-  // --- YENI: Tüm Commit'leri Çekme Fonksiyonu ---
-  // GitHub API'sinin committer-date bazlı since/until filtresi yerine,
-  // tüm commit'leri çekip sonra JS tarafında author-date'e göre filtreleme yapılıyor.
+  // --- CHANGED END: CommitDetails Render Function ---
+  // --- NEW: Fetch All Filtered Commits Function ---
+  // Instead of using GitHub API's since/until filters based on committer-date,
+  // we fetch all commits and then filter by author-date in JS.
   const fetchAllFilteredCommits = useCallback(async () => {
     if (!selectedRepo) return;
     setIsFetchingAllCommits(true);
     setError(null);
     try {
-      let allCommits = []; // Bu, detaylı commit objelerini içerecek
+      let allCommits = []; // This will contain detailed commit objects
       let page = 1;
       const per_page = 100;
-      // NOT: since/until query parametreleri kaldırıldı.
-      // Çünkü GitHub API'si bunları committer-date'e göre uygular.
-      // Biz author-date'e göre filtreleme yapmak istiyoruz (filterCommits ile).
+      // NOTE: since/until query parameters have been removed.
+      // Because GitHub API applies these to committer-date.
+      // We want to filter by author-date (using filterCommits).
       while (true) {
-        // Not: Bu çağrı contributor'a özel değil, repo genelindeki commit'leri çeker.
-        // Tarih filtresi API seviyesinde DEĞİL, JS seviyesinde uygulanacak.
+        // Note: This call fetches commits for the entire repo, not contributor-specific.
+        // Date filter is NOT applied at the API level, but in JS (filterCommits).
         const res = await fetch(
-          `https://api.github.com/repos/${selectedRepo}/commits?per_page=${per_page}&page=${page}`, // <-- since/until kaldırıldı
+          `https://api.github.com/repos/${selectedRepo}/commits?per_page=${per_page}&page=${page}`, // <-- since/until removed
           { headers: getAuthHeaders() }
         );
         if (!res.ok) {
           if (res.status === 403) {
             throw new Error("Rate limit exceeded");
           }
-          // Diğer hatalar için döngüyü kır
+          // Break loop for other errors
           console.warn(`Failed to fetch commits page ${page}`, res.status);
           break;
         }
         const data = await res.json();
         if (data.length === 0) break;
-        // Her commit'in detaylarını almak için (files bilgisi için)
+        // Fetch details for each commit (for files info)
         const detailedCommits = await Promise.all(
           data.map(async (commit) => {
-            // Commit SHA'sı ile detaylı bilgiyi çek
+            // Fetch detailed info using commit SHA
             const detailRes = await fetch(commit.url, { headers: getAuthHeaders() });
             if (!detailRes.ok) {
               console.warn(`Failed to fetch details for commit ${commit.sha}`);
-              // Detay alınamazsa, temel bilgileri kullanmaya çalış
+              // If details can't be fetched, try to use basic info
               return commit; 
             }
             return await detailRes.json();
@@ -1684,36 +1684,36 @@ function App() {
         );
         allCommits = allCommits.concat(detailedCommits);
         page++;
-        // Güvenlik önlemi: Çok fazla sayfa olursa sonsuz döngüyü engelle
-        if (page > 10) { // Örneğin, maksimum 1000 commit
+        // Safety measure: Prevent infinite loop if there are too many pages
+        if (page > 10) { // For example, max 1000 commits
             console.warn("Max page limit reached for all commits fetch.");
             break;
         }
       }
-      // Tarih ve commit tipi filtresini TAMAMIYLA burada uygula (filterCommits ile)
-      // filterCommits fonksiyonu zaten author.date'e göre çalışıyor.
+      // Apply date and commit type filter COMPLETELY here (using filterCommits)
+      // filterCommits function already works with author.date.
       const finalFilteredCommits = filterCommits(allCommits);
       setAllFilteredCommits(finalFilteredCommits);
-      setIsFetchingAllCommits(false); // <-- Buraya taşındı
+      setIsFetchingAllCommits(false); // <-- Moved here
     } catch (error) {
       console.error("Error fetching all filtered commits:", error);
       setError(error.message || "Error fetching commits for date range.");
-      setAllFilteredCommits([]); // Hata durumunda listeyi temizle
-      setIsFetchingAllCommits(false); // <-- Buraya da taşındı
+      setAllFilteredCommits([]); // Clear list on error
+      setIsFetchingAllCommits(false); // <-- Also moved here
     }
-    // finally bloğu kaldırıldı
-  }, [selectedRepo, dateFrom, dateTo, commitFilter, filterCommits]); // filterCommits dependency'si eklendi
-  // --- YENI BITTI: Tüm Commit'leri Çekme Fonksiyonu ---
-  // --- YENI: Tarih veya Commit Tipi Değiştiğinde Tetikleme ---
+    // finally block removed
+  }, [selectedRepo, dateFrom, dateTo, commitFilter, filterCommits]); // filterCommits dependency added
+  // --- NEW END: Fetch All Filtered Commits Function ---
+  // --- NEW: Trigger on Date or Commit Type Change ---
   useEffect(() => {
-    if (selectedRepo) { // Sadece bir repo seçiliyse çalış
+    if (selectedRepo) { // Only run if a repo is selected
         fetchAllFilteredCommits();
     } else {
-        setAllFilteredCommits([]); // Repo seçili değilse listeyi temizle
-        setIsFetchingAllCommits(false); // Ve loading state'i false yap
+        setAllFilteredCommits([]); // Clear list if no repo is selected
+        setIsFetchingAllCommits(false); // Set loading state to false
     }
-  }, [selectedRepo, dateFrom, dateTo, commitFilter, fetchAllFilteredCommits]); // fetchAllFilteredCommits dependency'si eklendi
-  // --- YENI BITTI: Tarih veya Commit Tipi Değiştiğinde Tetikleme ---
+  }, [selectedRepo, dateFrom, dateTo, commitFilter, fetchAllFilteredCommits]); // fetchAllFilteredCommits dependency added
+  // --- NEW END: Trigger on Date or Commit Type Change ---
   return (
     <div
       style={{
@@ -1731,8 +1731,8 @@ function App() {
       {showInfoModal && (
         <InfoModal onClose={() => setShowInfoModal(false)} darkMode={darkMode} />
       )}
-      {/* --- YENI: SpellCheckModal Render --- */}
-      {/* Z-index düzeltmesi burada da etkili olacak */}
+      {/* --- NEW: SpellCheckModal Render --- */}
+      {/* Z-index fix will also take effect here */}
       {showSpellCheckModal && (
         <SpellCheckModal
           message={currentSpellCheckMessage}
@@ -1742,9 +1742,9 @@ function App() {
           isChecking={isSpellCheckLoading}
         />
       )}
-      {/* --- YENI BITTI: SpellCheckModal Render --- */}
-      {/* --- YENI: RecentCommitsModal Render --- */}
-      {/* RecentCommitsModal'a onSpellCheck prop'u eklendi */}
+      {/* --- NEW END: SpellCheckModal Render --- */}
+      {/* --- NEW: RecentCommitsModal Render --- */}
+      {/* RecentCommitsModal with onSpellCheck prop added */}
       {showRecentCommitsModal && (
         <RecentCommitsModal
           onClose={() => setShowRecentCommitsModal(false)}
@@ -1754,14 +1754,14 @@ function App() {
             setSelectedRepo(repoName);
             setShowRecentCommitsModal(false);
           }}
-          onSpellCheck={performSpellCheck} // Yeni prop
+          onSpellCheck={performSpellCheck} // New prop
         />
       )}
-      {/* --- YENI BITTI: RecentCommitsModal Render --- */}
+      {/* --- NEW END: RecentCommitsModal Render --- */}
       
-      {/* --- YENI: Rate Limit Info Render --- */}
+      {/* --- NEW: Rate Limit Info Render --- */}
       <RateLimitInfo darkMode={darkMode} theme={theme} />
-      {/* --- YENI BITTI: Rate Limit Info Render --- */}
+      {/* --- NEW END: Rate Limit Info Render --- */}
       
       <section
         style={{
@@ -1842,7 +1842,7 @@ function App() {
         >
           🔍 Search Owner
         </button>
-        {/* --- YENI: Recent Commits Button --- */}
+        {/* --- NEW: Recent Commits Button --- */}
         <button
           onClick={fetchRecentCommits}
           disabled={recentCommitsLoading || repos.length === 0}
@@ -1871,7 +1871,7 @@ function App() {
         >
           {recentCommitsLoading ? "⏳ Loading..." : "🕒 Recent Commits"}
         </button>
-        {/* --- YENI BITTI: Recent Commits Button --- */}
+        {/* --- NEW END: Recent Commits Button --- */}
       </section>
       {error && (
         <div
@@ -2456,8 +2456,8 @@ function App() {
           </div>
         </div>
       )}
-      {/* --- DEGISTIRILDI: selectedUsers.length > 0 kontrolü kaldırıldı --- */}
-      {/* Artık contributor seçimi olmadan da çalışacak */}
+      {/* --- CHANGED: selectedUsers.length > 0 check removed --- */}
+      {/* Will now work without contributor selection */}
       <div
         style={{
           background: theme.cardBg,
@@ -2564,21 +2564,21 @@ function App() {
             </div>
           </div>
         </div>
-        {/* --- DEGISTIRILDI: DateRangeSummary artık tüm commit'leri kullanıyor --- */}
+        {/* --- CHANGED: DateRangeSummary now uses all commits --- */}
         <DateRangeSummary 
           commits={allFilteredCommits} 
           darkMode={darkMode} 
           theme={theme} 
         />
-        {/* --- DEGISTIRILDI BITTI: DateRangeSummary artık tüm commit'leri kullanıyor --- */}
-        {/* --- YENI: Yüklenme Durumu --- */}
+        {/* --- CHANGED END: DateRangeSummary now uses all commits --- */}
+        {/* --- NEW: Loading State --- */}
         {isFetchingAllCommits && (
           <div style={{ textAlign: 'center', padding: '20px', color: darkMode ? "#bbb" : "#666" }}>
             Loading commits for date range...
           </div>
         )}
-        {/* --- YENI BITTI: Yüklenme Durumu --- */}
-        {/* --- KOSULLU: Contributor seçildiyse aşağıdaki bölümler gösterilir --- */}
+        {/* --- NEW END: Loading State --- */}
+        {/* --- CONDITIONAL: Sections shown if contributors are selected --- */}
         {selectedUsers.length > 0 && (
           <>
             <div style={{ marginBottom: 30 }}>
@@ -2720,9 +2720,9 @@ function App() {
             {renderCommitDetails()}
           </>
         )}
-        {/* --- KOSULLU BITTI: Contributor seçildiyse aşağıdaki bölümler gösterilir --- */}
+        {/* --- CONDITIONAL END: Sections shown if contributors are selected --- */}
       </div>
-      {/* --- DEGISTIRILDI BITTI: selectedUsers.length > 0 kontrolü kaldırıldı --- */}
+      {/* --- CHANGED END: selectedUsers.length > 0 check removed --- */}
       {showOwnerModal && (
         <OwnerRepoModal
           owner={ownerForModal}
